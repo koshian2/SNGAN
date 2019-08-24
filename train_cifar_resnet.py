@@ -8,7 +8,7 @@ import statistics
 import glob
 
 import losses
-import models.standard_cnn as standard_cnn
+import models.cifar_resnet as cifar_resnet
 from inception_score import inceptions_score_all_weights
 
 def load_cifar(batch_size):
@@ -23,6 +23,7 @@ def load_cifar(batch_size):
     return dataloader
 
 def train(cases):
+    ## ResNet version cifar-10
     # case 0
     # standard_cnn + bce loss
 
@@ -35,10 +36,10 @@ def train(cases):
     # case 3
     # standard_cnn_conditional + hinge_loss
 
-    output_dir = f"cifar_case{cases}"
+    output_dir = f"cifar_resnet_case{cases}"
 
     batch_size = 64
-    device = "cuda:1"
+    device = "cuda"
 
     dataloader = load_cifar(batch_size)
 
@@ -46,8 +47,8 @@ def train(cases):
         enable_conditional = False
     elif cases in [2, 3]:
         enable_conditional = True    
-    model_G = standard_cnn.Generator(dataset="cifar", enable_conditional=enable_conditional)
-    model_D = standard_cnn.Discriminator(dataset="cifar", enable_conditional=enable_conditional)
+    model_G = cifar_resnet.Generator(enable_conditional=enable_conditional)
+    model_D = cifar_resnet.Discriminator(enable_conditional=enable_conditional)
     model_G, model_D = model_G.to(device), model_D.to(device)
 
     param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.0, 0.9))
@@ -135,12 +136,10 @@ def evaluate(cases):
         enable_conditional = True
         n_classes = 10    
 
-    inceptions_score_all_weights("cifar_case" + str(cases), standard_cnn.Generator,
-                                100, 100, dataset="cifar", n_classes=n_classes,
+    inceptions_score_all_weights("cifar_case" + str(cases), cifar_resnet.Generator,
+                                100, 100, n_classes=n_classes,
                                 enable_conditional=enable_conditional)
     
 if __name__ == "__main__":
-    for i in range(4):
-        train(i)
-        evaluate(i)
+    train(1)
 

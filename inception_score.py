@@ -114,7 +114,7 @@ def evaluate_inception_score(image_tensor, verbose=False):
     return result
 
 def inceptions_score_all_weights(base_dir, generator_class,
-                                 generats_mini_batches, batch_size, n_classes=0, *args, **kwargs):
+                                 generates_mini_batches, batch_size, n_classes=0, *args, **kwargs):
     model_paths = sorted(glob.glob(base_dir + "/models/gen*.pytorch"))
 
     epochs = []
@@ -130,7 +130,7 @@ def inceptions_score_all_weights(base_dir, generator_class,
         with torch.no_grad():
             model.eval()
             imgs = []
-            for _ in range(generats_mini_batches):
+            for _ in range(generates_mini_batches):
                 if n_classes == 0: # unconditional
                     x = model(torch.randn(batch_size, 128))
                 else:  # conditional

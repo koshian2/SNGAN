@@ -1,3 +1,5 @@
 # サブフォルダの除外
 */
+!models/*
 *コピー.py
+sandbox.py
