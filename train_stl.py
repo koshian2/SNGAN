@@ -11,15 +11,31 @@ import losses
 import models.standard_cnn as standard_cnn
 from inception_score import inceptions_score_all_weights
 
-def load_cifar(batch_size):
+def load_stl(batch_size):
+    # first, store as tensor
     trans = transforms.Compose([
+        transforms.Resize(size=(48, 48)),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
-    dataset = torchvision.datasets.CIFAR10(root="./data", train=True,
-                transform=trans, download=True)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
-                shuffle=True, num_workers=4)
+    # train + test (# 13000)
+    dataset = torchvision.datasets.STL10(root="./data", split="train", transform=trans, download=True)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=100, shuffle=False)
+    imgs, labels = [], []
+    for x, y in dataloader:
+        imgs.append(x)
+        labels.append(y)
+    dataset = torchvision.datasets.STL10(root="./data", split="test", transform=trans)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=100, shuffle=False)
+    for x, y in dataloader:
+        imgs.append(x)
+        labels.append(y)
+    # as tensor
+    all_imgs = torch.cat(imgs, dim=0)
+    all_labels = torch.cat(labels, dim=0)
+    # as dataset
+    dataset = torch.utils.data.TensorDataset(all_imgs, all_labels)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4)
     return dataloader
 
 def train(cases):
@@ -35,19 +51,19 @@ def train(cases):
     # case 3
     # standard_cnn_conditional + hinge_loss
 
-    output_dir = f"cifar_case{cases}"
+    output_dir = f"stl_case{cases}"
 
     batch_size = 64
-    device = "cuda:1"
+    device = "cuda:0"
 
-    dataloader = load_cifar(batch_size)
+    dataloader = load_stl(batch_size)
 
     if cases in [0, 1]:
         enable_conditional = False
     elif cases in [2, 3]:
         enable_conditional = True    
-    model_G = standard_cnn.Generator(dataset="cifar", enable_conditional=enable_conditional)
-    model_D = standard_cnn.Discriminator(dataset="cifar", enable_conditional=enable_conditional)
+    model_G = standard_cnn.Generator(dataset="stl", enable_conditional=enable_conditional)
+    model_D = standard_cnn.Discriminator(dataset="stl", enable_conditional=enable_conditional)
     model_G, model_D = model_G.to(device), model_D.to(device)
 
     param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.0, 0.9))
@@ -64,7 +80,7 @@ def train(cases):
     n = len(dataloader)
     onehot_encoding = torch.eye(10).to(device)
 
-    for epoch in range(1):
+    for epoch in range(1301):
         log_loss_D, log_loss_G = [], []
 
         for i, (real_img, labels) in tqdm(enumerate(dataloader), total=n):
@@ -113,13 +129,14 @@ def train(cases):
             
         if not os.path.exists(output_dir):
             os.mkdir(output_dir)
-        torchvision.utils.save_image(fake_img_tensor, f"{output_dir}/epoch_{epoch:03}.png",
-                                    nrow=8, padding=2, normalize=True, range=(-1.0, 1.0))
+        if epoch % 4 == 0:
+            torchvision.utils.save_image(fake_img_tensor, f"{output_dir}/epoch_{epoch:03}.png",
+                                        nrow=8, padding=2, normalize=True, range=(-1.0, 1.0))
 
         # 係数保存
         if not os.path.exists(output_dir + "/models"):
             os.mkdir(output_dir+"/models")
-        if epoch % 5 == 0:
+        if epoch % 20 == 0:
             torch.save(model_G.state_dict(), f"{output_dir}/models/gen_epoch_{epoch:03}.pytorch")
             torch.save(model_D.state_dict(), f"{output_dir}/models/dis_epoch_{epoch:03}.pytorch")
 
@@ -135,12 +152,10 @@ def evaluate(cases):
         enable_conditional = True
         n_classes = 10    
 
-    inceptions_score_all_weights("cifar_case" + str(cases), standard_cnn.Generator,
-                                100, 100, dataset="cifar", n_classes=n_classes,
+    inceptions_score_all_weights("stl_case" + str(cases), standard_cnn.Generator,
+                                100, 100, dataset="stl", n_classes=n_classes,
                                 enable_conditional=enable_conditional)
     
 if __name__ == "__main__":
-    for i in range(4):
-        train(i)
-        evaluate(i)
+    train(1)
 

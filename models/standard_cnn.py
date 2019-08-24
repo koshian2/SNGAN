@@ -46,7 +46,7 @@ class Discriminator(nn.Module):
         self.conv4 = ConvSNLRelu(256, 512, 3, 1, padding=1)
         self.dense = nn.Linear(self.mg * self.mg * 512, 1)
         if n_classes > 0:
-            self.sn_embedding = SNEmbedding(n_classes, 512)
+            self.sn_embedding = SNEmbedding(n_classes, self.mg * self.mg * 512)
         else:
             self.sn_embedding = None
 
@@ -58,7 +58,8 @@ class Discriminator(nn.Module):
 
     def forward(self, inputs, label_onehots=None):
         x = self.conv4(self.conv3(self.conv2(self.conv1(inputs))))
-        x = self.dense(x.view(inputs.size(0), -1))
+        base_feature = x.view(inputs.size(0), -1)
+        x = self.dense(base_feature)
         if self.sn_embedding is not None:
-            x = self.sn_embedding(x, label_onehots)
+            x = self.sn_embedding(base_feature, x, label_onehots)
         return x

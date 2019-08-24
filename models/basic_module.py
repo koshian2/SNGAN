@@ -98,9 +98,9 @@ class SNEmbedding(nn.Module):
 
         self.linear.apply(init_xavier_uniform)
 
-    def forward(self, output_logits, label_onehots):
+    def forward(self, base_features, output_logits, label_onehots):
         wy = self.linear(label_onehots)
-        weighted = torch.sum(output_logits * wy, dim=1, keepdim=True)
+        weighted = torch.sum(base_features * wy, dim=1, keepdim=True)
         return output_logits + weighted
 
 class DiscriminatorSNResidualBlock(nn.Module):
