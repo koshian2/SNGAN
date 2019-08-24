@@ -42,10 +42,10 @@ class Discriminator(nn.Module):
     def forward(self, inputs, y=None):
         x = self.block4(self.block3(self.block2(self.block1(inputs))))
         x = F.relu(x, True)
-        x = torch.sum(x, dim=(2,3)) # gloobal sum pooling
-        x = self.dense(x)
+        features = torch.sum(x, dim=(2,3)) # gloobal sum pooling
+        x = self.dense(features)
         if self.sn_embedding is not None:
-            x = self.sn_embedding(x, y)
+            x = self.sn_embedding(features, x, y)
         return x
 
 
