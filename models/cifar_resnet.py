@@ -35,7 +35,7 @@ class Discriminator(nn.Module):
         self.block4 = DiscriminatorSNResidualBlock(128, 128, 1)
         self.dense = nn.Linear(128, 1)
         if n_classes > 0:
-            self.sn_embedding = SNEmbedding(n_classes, 512)
+            self.sn_embedding = SNEmbedding(n_classes, 128)
         else:
             self.sn_embedding = None
 
