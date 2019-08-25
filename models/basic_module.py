@@ -49,6 +49,9 @@ class GeneratorResidualBlock(nn.Module):
         else:
             self.shortcut_conv = None
 
+        self.conv1.apply(init_xavier_uniform)
+        self.conv2.apply(init_xavier_uniform)
+
     def forward(self, inputs, label_onehots=None):
         # main
         if label_onehots is not None:
@@ -113,6 +116,9 @@ class DiscriminatorSNResidualBlock(nn.Module):
             self.shortcut_conv = SpectralNorm(nn.Conv2d(in_ch, out_ch, kernel_size=1, padding=0))
         else:
             self.shortcut_conv = None
+
+        self.conv1.apply(init_xavier_uniform)
+        self.conv2.apply(init_xavier_uniform)
 
     def forward(self, inputs):
         x = F.relu(inputs)

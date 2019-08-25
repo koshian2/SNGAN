@@ -23,6 +23,9 @@ def load_cifar(batch_size):
     return dataloader
 
 def train(cases):
+    # うまくいかないケース
+    # lr=0.0002, n_dis=5, beta1~0
+
     ## ResNet version cifar-10
     # case 0
     # standard_cnn + bce loss
@@ -51,8 +54,8 @@ def train(cases):
     model_D = cifar_resnet.Discriminator(enable_conditional=enable_conditional)
     model_G, model_D = model_G.to(device), model_D.to(device)
 
-    param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.0, 0.9))
-    param_D = torch.optim.Adam(model_D.parameters(), lr=0.0002, betas=(0.0, 0.9))
+    param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.5, 0.9))
+    param_D = torch.optim.Adam(model_D.parameters(), lr=0.0002, betas=(0.5, 0.9))
 
     if cases in [0, 2]:
         gan_loss = losses.DCGANCrossEntropy(batch_size, device)
@@ -136,10 +139,12 @@ def evaluate(cases):
         enable_conditional = True
         n_classes = 10    
 
-    inceptions_score_all_weights("cifar_case" + str(cases), cifar_resnet.Generator,
+    inceptions_score_all_weights("cifar_resnet_case" + str(cases), cifar_resnet.Generator,
                                 100, 100, n_classes=n_classes,
                                 enable_conditional=enable_conditional)
     
 if __name__ == "__main__":
-    train(1)
+    for i in range(4):
+        train(i)
+        evaluate(i)
 

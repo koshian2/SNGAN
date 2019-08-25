@@ -8,7 +8,7 @@ import statistics
 import glob
 
 import losses
-import models.standard_cnn as standard_cnn
+import models.stl_resnet as stl_resnet
 from inception_score import inceptions_score_all_weights
 
 def load_stl(batch_size):
@@ -39,54 +39,56 @@ def load_stl(batch_size):
     return dataloader
 
 def train(cases):
-    # すべてHinge loss
+    ## ResNet version stl-10
+    # fixed parameters
+    # loss=Hinge, beta1=0.5
+
     # case 0
-    # standard_cnn + beta1 0.5
-
+    # n_dis = 5, last_ch = 512, non-conditional
     # case 1
-    # standard_cnn + beta1 0.0 
-
+    # n_dis = 5, last_ch = 512, conditional
     # case 2
-    # standard_cnn_conditional + beta1 0.5
-
+    # n_dis = 1, last_ch = 512, non-conditional
     # case 3
-    # standard_cnn_conditional + beta1 0.0
+    # n_dis = 1, last_ch = 512, conditional
+    # case 4
+    # n_dis = 1, last_ch = 1024, non-conditional
+    # case 5
+    # n_dis = 1, last_ch = 1024, contional
 
-    output_dir = f"stl_case{cases}"
+    output_dir = f"cifar_stl_case{cases}"
 
     batch_size = 64
-    device = "cuda:0"
+    device = "cuda"
 
     dataloader = load_stl(batch_size)
 
-    if cases in [0, 1]:
-        enable_conditional = False
-    elif cases in [2, 3]:
-        enable_conditional = True
-    if cases in [1, 3]:
-        bata1 = 0.0
-    elif cases in [0, 2]:
-        beta1 = 0.5    
-    model_G = standard_cnn.Generator(dataset="stl", enable_conditional=enable_conditional)
-    model_D = standard_cnn.Discriminator(dataset="stl", enable_conditional=enable_conditional)
+    enable_conditional = (cases % 2 != 0)
+    n_dis_update = 5 if cases <= 1 else 1
+    last_ch = 512 if cases <= 3 else 1024
+
+    n_epoch = 1301 if n_dis_update == 5 else 261
+    
+    model_G = stl_resnet.Generator(enable_conditional=enable_conditional)
+    model_D = stl_resnet.Discriminator(enable_conditional=enable_conditional, last_ch=last_ch)
     model_G, model_D = model_G.to(device), model_D.to(device)
 
-    param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(beta1, 0.9))
-    param_D = torch.optim.Adam(model_D.parameters(), lr=0.0002, betas=(beta1, 0.9))
+    param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.5, 0.9))
+    param_D = torch.optim.Adam(model_D.parameters(), lr=0.0002, betas=(0.5, 0.9))
 
     gan_loss = losses.HingeLoss(batch_size, device)
-
-    n_dis_update = 5
 
     result = {"d_loss": [], "g_loss": []}
     n = len(dataloader)
     onehot_encoding = torch.eye(10).to(device)
 
-    for epoch in range(1301):
+    for epoch in range(50):
         log_loss_D, log_loss_G = [], []
 
         for i, (real_img, labels) in tqdm(enumerate(dataloader), total=n):
             batch_len = len(real_img)
+            if batch_len != batch_size: continue
+
             real_img = real_img.to(device)
             if enable_conditional:
                 label_onehots = onehot_encoding[labels.to(device)] # conditional
@@ -131,16 +133,15 @@ def train(cases):
             
         if not os.path.exists(output_dir):
             os.mkdir(output_dir)
-        if epoch % 4 == 0:
-            torchvision.utils.save_image(fake_img_tensor, f"{output_dir}/epoch_{epoch:03}.png",
-                                        nrow=8, padding=2, normalize=True, range=(-1.0, 1.0))
+        torchvision.utils.save_image(fake_img_tensor, f"{output_dir}/epoch_{epoch:03}.png",
+                                    nrow=8, padding=2, normalize=True, range=(-1.0, 1.0))
 
         # 係数保存
         if not os.path.exists(output_dir + "/models"):
             os.mkdir(output_dir+"/models")
-        if epoch % 20 == 0:
-            torch.save(model_G.state_dict(), f"{output_dir}/models/gen_epoch_{epoch:04}.pytorch")
-            torch.save(model_D.state_dict(), f"{output_dir}/models/dis_epoch_{epoch:04}.pytorch")
+        if epoch % 5 == 0:
+            torch.save(model_G.state_dict(), f"{output_dir}/models/gen_epoch_{epoch:03}.pytorch")
+            torch.save(model_D.state_dict(), f"{output_dir}/models/dis_epoch_{epoch:03}.pytorch")
 
     # ログ
     with open(output_dir + "/logs.pkl", "wb") as fp:
@@ -154,12 +155,10 @@ def evaluate(cases):
         enable_conditional = True
         n_classes = 10    
 
-    inceptions_score_all_weights("stl_case" + str(cases), standard_cnn.Generator,
-                                100, 100, dataset="stl", n_classes=n_classes,
+    inceptions_score_all_weights("cifar_resnet_case" + str(cases), cifar_resnet.Generator,
+                                100, 100, n_classes=n_classes,
                                 enable_conditional=enable_conditional)
     
 if __name__ == "__main__":
-    for i in range(4):
-        train(i)
-        evaluate(i)
+    train(5)
 

@@ -140,6 +140,9 @@ def evaluate(cases):
                                 enable_conditional=enable_conditional)
     
 if __name__ == "__main__":
+    evaluate(2)
+    evaluate(3)
+    exit()
     for i in range(4):
         train(i)
         evaluate(i)
