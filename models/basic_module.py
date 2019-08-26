@@ -84,10 +84,10 @@ class GeneratorResidualBlock(nn.Module):
         
 ## Discriminator Block
 class ConvSNLRelu(nn.Module):
-    def __init__(self, in_ch, out_ch, kernel, stride, padding=0):
+    def __init__(self, in_ch, out_ch, kernel, stride, padding=0, lrelu_slope=0.1):
         super().__init__()
         self.conv = SpectralNorm(nn.Conv2d(in_ch, out_ch, kernel, stride, padding=padding))
-        self.lrelu = nn.LeakyReLU(0.1, True)
+        self.lrelu = nn.LeakyReLU(lrelu_slope, True)
         
         self.conv.apply(init_xavier_uniform)
 

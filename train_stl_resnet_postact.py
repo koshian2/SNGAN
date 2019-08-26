@@ -8,7 +8,7 @@ import statistics
 import glob
 
 import losses
-import models.stl_resnet as stl_resnet
+import models.post_act_resnet as post_act_resnet
 from inception_score import inceptions_score_all_weights
 
 def load_stl(batch_size):
@@ -39,42 +39,31 @@ def load_stl(batch_size):
     return dataloader
 
 def train(cases):
-    ## ResNet version stl-10
-    # fixed parameters
-    # loss=Hinge, beta1=0.5
+    ## ResNet version stl-10 (post-act, D=small)
 
     # case 0
-    # n_dis = 5, last_ch = 512, non-conditional
+    # n_dis = 5, non-conditional
     # case 1
-    # n_dis = 5, last_ch = 512, conditional
+    # n_dis = 5, conditional
     # case 2
-    # n_dis = 1, last_ch = 512, non-conditional
+    # n_dis = 1, non-conditional
     # case 3
-    # n_dis = 1, last_ch = 512, conditional
-    # case 4
-    # n_dis = 5, last_ch = 1024, non-conditional
-    # case 5
-    # n_dis = 5, last_ch = 1024, contional
-    # case 6
-    # n_dis = 1, last_ch = 1024, non-conditional
-    # case 7
-    # n_dis = 1, last_ch = 1024, contional
+    # n_dis = 1, conditional
 
-    output_dir = f"stl_resnet_case{cases}"
+    output_dir = f"stl_resnet_postact_case{cases}"
 
     batch_size = 64
     device = "cuda"
 
     dataloader = load_stl(batch_size)
 
-    enable_conditional = (cases % 2 != 0)
-    n_dis_update = 5 if cases in [0, 1, 4, 5] else 1    
-    last_ch = 512 if cases <= 3 else 1024
+    n_classes = 10 if (cases % 2 != 0) else 0 # Conditional / non-Conditional
+    n_dis_update = 5 if cases <= 1 else 1    
 
     n_epoch = 1301 if n_dis_update == 5 else 261
     
-    model_G = stl_resnet.Generator(enable_conditional=enable_conditional)
-    model_D = stl_resnet.Discriminator(enable_conditional=enable_conditional, last_ch=last_ch)
+    model_G = post_act_resnet.Generator(latent_dims=3, n_classes=n_classes)
+    model_D = post_act_resnet.Discriminator(latent_dims=3, n_classes=n_classes)
     model_G, model_D = model_G.to(device), model_D.to(device)
 
     param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.5, 0.9))
@@ -94,7 +83,7 @@ def train(cases):
             if batch_len != batch_size: continue
 
             real_img = real_img.to(device)
-            if enable_conditional:
+            if n_classes != 0:
                 label_onehots = onehot_encoding[labels.to(device)] # conditional
             else:
                 label_onehots = None # non conditional
@@ -160,10 +149,9 @@ def evaluate(cases):
         enable_conditional = True
         n_classes = 10    
 
-    inceptions_score_all_weights("stl_resnet_case" + str(cases), cifar_resnet.Generator,
+    inceptions_score_all_weights("stl_resnet_postact_case" + str(cases), post_act_resnet.Generator,
                                 100, 100, n_classes=n_classes,
                                 enable_conditional=enable_conditional)
     
 if __name__ == "__main__":
-    train(4)
-
+    train(3)
