@@ -153,17 +153,13 @@ def train(cases):
         pickle.dump(result, fp)
             
 def evaluate(cases):
-    if cases in [0, 1]:
-        enable_conditional = False
-        n_classes = 0
-    elif cases in [2, 3]:
-        enable_conditional = True
-        n_classes = 10    
+    enable_conditional = (cases % 2 != 0)
+    n_classes = 10 if enable_conditional else 0
 
-    inceptions_score_all_weights("stl_resnet_case" + str(cases), cifar_resnet.Generator,
+    inceptions_score_all_weights("stl_resnet_case" + str(cases), stl_resnet.Generator,
                                 100, 100, n_classes=n_classes,
                                 enable_conditional=enable_conditional)
     
 if __name__ == "__main__":
-    train(4)
+    train(0)
 

@@ -34,8 +34,9 @@ class Generator(nn.Module):
         return self.out(x)
 
 class Discriminator(nn.Module):
-    def __init__(self, latent_dims=3, n_classes=0):
+    def __init__(self, latent_dims=3, n_classes=0, lrelu_slope=0.1):
         super().__init__()
+        self.lrelu_slope = lrelu_slope
         self.conv1 = self.discriminator_block(3, 32)
         self.conv2 = self.discriminator_block(32, 64)
         self.conv3 = self.discriminator_block(64, 128)
@@ -48,8 +49,8 @@ class Discriminator(nn.Module):
 
     def discriminator_block(self, in_ch, out_ch):
         return nn.Sequential(
-            ConvSNLRelu(in_ch, out_ch, 3, 2, padding=1),
-            ConvSNLRelu(out_ch, out_ch, 3, 1, padding=1)
+            ConvSNLRelu(in_ch, out_ch, 3, 2, padding=1, lrelu_slope=self.lrelu_slope),
+            ConvSNLRelu(out_ch, out_ch, 3, 1, padding=1, lrelu_slope=self.lrelu_slope)
         )
 
     def forward(self, inputs, label_onehots=None):

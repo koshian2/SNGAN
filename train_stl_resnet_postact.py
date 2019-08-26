@@ -42,13 +42,21 @@ def train(cases):
     ## ResNet version stl-10 (post-act, D=small)
 
     # case 0
-    # n_dis = 5, non-conditional
+    # n_dis = 5, beta2 = 0.9, non-conditional
     # case 1
-    # n_dis = 5, conditional
+    # n_dis = 5, beta2 = 0.9, conditional
     # case 2
-    # n_dis = 1, non-conditional
+    # n_dis = 1, beta2 = 0.9, non-conditional
     # case 3
-    # n_dis = 1, conditional
+    # n_dis = 1, beta2 = 0.9, conditional
+    # case 4
+    # n_dis = 1, beta2 = 0.999, non-conditional
+    # case 5
+    # n_dis = 1, beta2 = 0.999, conditional
+    # case 6
+    # n_dis = 1, beta2 = 0.999, non-conditional, leaky_relu_slope = 0.2 (others=0.1)
+    # case 7
+    # n_dis = 1, beta2 = 0.999, non-conditional, leaky_relu_slope = 0.2
 
     output_dir = f"stl_resnet_postact_case{cases}"
 
@@ -58,16 +66,18 @@ def train(cases):
     dataloader = load_stl(batch_size)
 
     n_classes = 10 if (cases % 2 != 0) else 0 # Conditional / non-Conditional
-    n_dis_update = 5 if cases <= 1 else 1    
+    n_dis_update = 5 if cases <= 1 else 1
+    beta2 = 0.9 if cases <= 3 else 0.999
+    lrelu_slope = 0.1 if cases <= 5 else 0.2
 
     n_epoch = 1301 if n_dis_update == 5 else 261
     
     model_G = post_act_resnet.Generator(latent_dims=3, n_classes=n_classes)
-    model_D = post_act_resnet.Discriminator(latent_dims=3, n_classes=n_classes)
+    model_D = post_act_resnet.Discriminator(latent_dims=3, n_classes=n_classes, lrelu_slope=lrelu_slope)
     model_G, model_D = model_G.to(device), model_D.to(device)
 
-    param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.5, 0.9))
-    param_D = torch.optim.Adam(model_D.parameters(), lr=0.0002, betas=(0.5, 0.9))
+    param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.5, beta2))
+    param_D = torch.optim.Adam(model_D.parameters(), lr=0.0002, betas=(0.5, beta2))
 
     gan_loss = losses.HingeLoss(batch_size, device)
 
