@@ -107,7 +107,7 @@ class SNEmbedding(nn.Module):
         return output_logits + weighted
 
 class DiscriminatorSNResidualBlock(nn.Module):
-    def __init__(self, in_ch, out_ch, downsampling, n_classes=0):
+    def __init__(self, in_ch, out_ch, downsampling):
         super().__init__()
         self.conv1 = SpectralNorm(nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1))
         self.conv2 = SpectralNorm(nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1))

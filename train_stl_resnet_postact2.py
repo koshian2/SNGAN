@@ -39,50 +39,40 @@ def load_stl(batch_size):
     return dataloader
 
 def train(cases):
-    ## ResNet version stl-10 (post-act, D=small non-resnet)
+    ## ResNet version stl-10 (post-act, D-G:resnet)
 
     # case 0
-    # n_dis = 5, beta2 = 0.9, non-conditional
+    # n_dis = 5, D_initial_ch = 16
     # case 1
-    # n_dis = 5, beta2 = 0.9, conditional
+    # n_dis = 1, D_initial_ch = 16
     # case 2
-    # n_dis = 1, beta2 = 0.9, non-conditional
+    # n_dis = 5, D_initial_ch = 32
     # case 3
-    # n_dis = 1, beta2 = 0.9, conditional
+    # n_dis = 1, D_initial_ch = 32
     # case 4
-    # n_dis = 1, beta2 = 0.999, non-conditional
+    # n_dis = 5, D_initial_ch = 64
     # case 5
-    # n_dis = 1, beta2 = 0.999, conditional
-    # case 6
-    # n_dis = 1, beta2 = 0.999, non-conditional, leaky_relu_slope = 0.2 (others=0.1)
-    # case 7
-    # n_dis = 1, beta2 = 0.999, conditional, leaky_relu_slope = 0.2
-    # case 8
-    # n_dis = 1, beta2 = 0.999, non-conditional, leaky_relu_slope = 0.2, lr_d = 0.001 (others=0.0002)
-    # case 9
-    # n_dis = 1, beta2 = 0.999, conditional, leaky_relu_slope = 0.2, lr_d = 0.001
+    # n_dis = 1, D_initial_ch = 64
 
-    output_dir = f"stl_resnet_postact_case{cases}"
+    output_dir = f"stl_resnet_postact2_case{cases}"
 
     batch_size = 64
-    device = "cuda"
+    device = "cpu"
 
     dataloader = load_stl(batch_size)
 
-    n_classes = 10 if (cases % 2 != 0) else 0 # Conditional / non-Conditional
-    n_dis_update = 5 if cases <= 1 else 1
-    beta2 = 0.9 if cases <= 3 else 0.999
-    lrelu_slope = 0.1 if cases <= 5 else 0.2
-    lr_d = 0.0002 if cases <= 7 else 0.001
+    n_dis_update = 5 if cases % 2 == 0 else 1
+    initial_ch = 16 * (cases // 2 + 1)    
 
     n_epoch = 1301 if n_dis_update == 5 else 261
+    n_epoch = 1
     
-    model_G = post_act_resnet.Generator(latent_dims=3, n_classes_g=n_classes)
-    model_D = post_act_resnet.Discriminator(latent_dims=3, n_classes=n_classes, lrelu_slope=lrelu_slope)
+    model_G = post_act_resnet.Generator(latent_dims=3, n_classes_g=10)
+    model_D = post_act_resnet.DiscriminatorResNet(latent_dims=3, n_classes_d=10, initial_ch=initial_ch)
     model_G, model_D = model_G.to(device), model_D.to(device)
 
-    param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.5, beta2))
-    param_D = torch.optim.Adam(model_D.parameters(), lr=lr_d, betas=(0.5, beta2))
+    param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.5, 0.999))
+    param_D = torch.optim.Adam(model_D.parameters(), lr=0.0002, betas=(0.5, 0.999))
 
     gan_loss = losses.HingeLoss(batch_size, device)
 
@@ -98,10 +88,7 @@ def train(cases):
             if batch_len != batch_size: continue
 
             real_img = real_img.to(device)
-            if n_classes != 0:
-                label_onehots = onehot_encoding[labels.to(device)] # conditional
-            else:
-                label_onehots = None # non conditional
+            label_onehots = onehot_encoding[labels.to(device)] # conditional
             
             # train G
             if i % n_dis_update == 0:
@@ -111,7 +98,7 @@ def train(cases):
                 rand_X = torch.randn(batch_len, 128).to(device)
                 fake_img = model_G(rand_X, label_onehots)
                 fake_img_tensor = fake_img.detach()
-                fake_img_onehots = label_onehots.detach() if label_onehots is not None else None
+                fake_img_onehots = label_onehots.detach()
                 g_out = model_D(fake_img, label_onehots)
                 loss = gan_loss(g_out, "gen")
                 log_loss_G.append(loss.item())
@@ -168,4 +155,4 @@ def evaluate(cases):
                                 100, 100, n_classes=n_classes, latent_dims=3, n_classes_g=n_classes)
     
 if __name__ == "__main__":
-    train(8)
+    train(1)

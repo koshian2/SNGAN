@@ -161,5 +161,6 @@ def evaluate(cases):
                                 enable_conditional=enable_conditional)
     
 if __name__ == "__main__":
-    train(0)
+    for i in range(2):
+        evaluate(i)
 

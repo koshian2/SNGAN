@@ -56,3 +56,30 @@ class GeneratorResidualBlockPostAct(nn.Module):
             shortcut = self.shortcut_conv(shortcut)
         # residual add
         return x + shortcut
+
+class DiscriminatorResidualBlockPostAct(nn.Module):
+    def __init__(self, in_ch, out_ch, downsampling):
+        super().__init__()
+        self.conv1 = SpectralNorm(nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1))
+        self.conv2 = SpectralNorm(nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1))
+        self.downsampling = downsampling
+        if in_ch != out_ch or downsampling > 1:
+            self.shortcut_conv = SpectralNorm(nn.Conv2d(in_ch, out_ch, kernel_size=1, padding=0))
+        else:
+            self.shortcut_conv = None
+
+        self.conv1.apply(init_xavier_uniform)
+        self.conv2.apply(init_xavier_uniform)
+
+    def forward(self, inputs):
+        if self.downsampling > 1:
+            x = F.avg_pool2d(inputs, kernel_size=self.downsampling)
+            shortcut = F.avg_pool2d(inputs, kernel_size=self.downsampling)
+        else:
+            x = inputs
+            shortcut = inputs
+        if self.shortcut_conv is not None:
+            shortcut = self.shortcut_conv(shortcut)
+        x = F.relu(self.conv2(F.relu(self.conv1(x))))
+        # residual add
+        return x + shortcut
