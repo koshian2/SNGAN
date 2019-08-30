@@ -9,6 +9,7 @@ import glob
 
 import losses
 import models.post_act_resnet as post_act_resnet
+import models.stl_resnet_light as stl_resnet_light
 import models.stl_resnet as stl_resnet
 from inception_score import inceptions_score_all_weights
 
@@ -44,11 +45,16 @@ def train(cases):
     # Gは論文流用して、Dは自作にLeakyReLUにする    
 
     # case 0
-    # beta2 = 0.9
+    # beta2 = 0.9, D = post_act_resnet.Discriminator
     # case 1
-    # beta2 = 0.999
+    # beta2 = 0.999, D = post_act_resnet.Discriminator
+    # case 2
+    # beta2 = 0.9, D = post_act_resnet.Discriminator
+    # case 3
+    # beta2 = 0.999, D = post_act_resnet.Discriminator
 
-    beta2 = 0.9 if cases == 0 else 0.999
+
+    beta2 = 0.9 if cases % 2 == 0 else 0.999
 
     output_dir = f"stl_resnet_dchange_case{cases}"
 
@@ -61,7 +67,10 @@ def train(cases):
     n_epoch = 1301
     
     model_G = stl_resnet.Generator(enable_conditional=True)
-    model_D = post_act_resnet.Discriminator(latent_dims=3, n_classes=10, lrelu_slope=0.2)    
+    if cases // 2 == 0:
+        model_D = post_act_resnet.Discriminator(latent_dims=3, n_classes=10, lrelu_slope=0.2)
+    elif cases // 2 == 1:
+        model_D = stl_resnet_light.DiscriminatorStrided(enable_conditional=True)    
     model_G, model_D = model_G.to(device), model_D.to(device)
 
     param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.5, beta2))
@@ -142,5 +151,4 @@ def evaluate(cases):
                                 enable_conditional=True)
     
 if __name__ == "__main__":
-    evaluate(0)
-    evaluate(1)
+    train(3)
