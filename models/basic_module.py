@@ -10,7 +10,7 @@ def init_xavier_uniform(layer):
         if hasattr(layer.bias, "data"):       
             layer.bias.data.fill_(0)
 
-## Discriminator block
+## Generator block
 
 class DeconvBNRelu(nn.Module):
     def __init__(self, in_ch, out_ch, kernel, stride, padding=0, n_classes=0):

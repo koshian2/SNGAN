@@ -9,6 +9,7 @@ import glob
 
 import losses
 import models.post_act_resnet as post_act_resnet
+import models.stl_resnet as stl_resnet
 from inception_score import inceptions_score_all_weights
 
 def load_stl(batch_size):
@@ -39,50 +40,32 @@ def load_stl(batch_size):
     return dataloader
 
 def train(cases):
-    ## ResNet version stl-10 (post-act, D=small non-resnet)
+    ## ResNet version stl-10
+    # Gは論文流用して、Dは自作にLeakyReLUにする    
 
     # case 0
-    # n_dis = 5, beta2 = 0.9, non-conditional
+    # beta2 = 0.9
     # case 1
-    # n_dis = 5, beta2 = 0.9, conditional
-    # case 2
-    # n_dis = 1, beta2 = 0.9, non-conditional
-    # case 3
-    # n_dis = 1, beta2 = 0.9, conditional
-    # case 4
-    # n_dis = 1, beta2 = 0.999, non-conditional
-    # case 5
-    # n_dis = 1, beta2 = 0.999, conditional
-    # case 6
-    # n_dis = 1, beta2 = 0.999, non-conditional, leaky_relu_slope = 0.2 (others=0.1)
-    # case 7
-    # n_dis = 1, beta2 = 0.999, conditional, leaky_relu_slope = 0.2
-    # case 8
-    # n_dis = 1, beta2 = 0.999, non-conditional, leaky_relu_slope = 0.2, lr_d = 0.001 (others=0.0002)
-    # case 9
-    # n_dis = 1, beta2 = 0.999, conditional, leaky_relu_slope = 0.2, lr_d = 0.001
+    # beta2 = 0.999
 
-    output_dir = f"stl_resnet_postact_case{cases}"
+    beta2 = 0.9 if cases == 0 else 0.999
+
+    output_dir = f"stl_resnet_dchange_case{cases}"
 
     batch_size = 64
     device = "cuda"
 
     dataloader = load_stl(batch_size)
 
-    n_classes = 10 if (cases % 2 != 0) else 0 # Conditional / non-Conditional
-    n_dis_update = 5 if cases <= 1 else 1
-    beta2 = 0.9 if cases <= 3 else 0.999
-    lrelu_slope = 0.1 if cases <= 5 else 0.2
-    lr_d = 0.0002 if cases <= 7 else 0.001
-
-    n_epoch = 1301 if n_dis_update == 5 else 261
+    n_dis_update = 5
+    n_epoch = 1301
     
-    model_G = post_act_resnet.Generator(latent_dims=3, n_classes_g=n_classes)
-    model_D = post_act_resnet.Discriminator(latent_dims=3, n_classes=n_classes, lrelu_slope=lrelu_slope)
+    model_G = stl_resnet.Generator(enable_conditional=True)
+    model_D = post_act_resnet.Discriminator(latent_dims=3, n_classes=10, lrelu_slope=0.2)    
     model_G, model_D = model_G.to(device), model_D.to(device)
 
     param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.5, beta2))
-    param_D = torch.optim.Adam(model_D.parameters(), lr=lr_d, betas=(0.5, beta2))
+    param_D = torch.optim.Adam(model_D.parameters(), lr=0.0002, betas=(0.5, beta2))
 
     gan_loss = losses.HingeLoss(batch_size, device)
 
@@ -98,10 +81,7 @@ def train(cases):
             if batch_len != batch_size: continue
 
             real_img = real_img.to(device)
-            if n_classes != 0:
-                label_onehots = onehot_encoding[labels.to(device)] # conditional
-            else:
-                label_onehots = None # non conditional
+            label_onehots = onehot_encoding[labels.to(device)] # conditional
             
             # train G
             if i % n_dis_update == 0:
@@ -157,16 +137,10 @@ def train(cases):
         pickle.dump(result, fp)
             
 def evaluate(cases):
-    if cases % 2 == 0:
-        enable_conditional = False
-        n_classes = 0
-    else:
-        enable_conditional = True
-        n_classes = 10    
-
-    inceptions_score_all_weights("stl_resnet_postact_case" + str(cases), post_act_resnet.Generator,
-                                100, 100, n_classes=n_classes, latent_dims=3, n_classes_g=n_classes)
+    inceptions_score_all_weights("stl_resnet_dchange_case" + str(cases), stl_resnet.Generator,
+                                100, 100, n_classes=10,
+                                enable_conditional=True)
     
 if __name__ == "__main__":
-    evaluate(8)
-    evaluate(9)
+    evaluate(0)
+    evaluate(1)

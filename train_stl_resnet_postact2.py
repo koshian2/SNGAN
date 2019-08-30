@@ -57,7 +57,7 @@ def train(cases):
     output_dir = f"stl_resnet_postact2_case{cases}"
 
     batch_size = 64
-    device = "cpu"
+    device = "cuda"
 
     dataloader = load_stl(batch_size)
 
@@ -65,7 +65,6 @@ def train(cases):
     initial_ch = 16 * (cases // 2 + 1)    
 
     n_epoch = 1301 if n_dis_update == 5 else 261
-    n_epoch = 1
     
     model_G = post_act_resnet.Generator(latent_dims=3, n_classes_g=10)
     model_D = post_act_resnet.DiscriminatorResNet(latent_dims=3, n_classes_d=10, initial_ch=initial_ch)
@@ -144,15 +143,9 @@ def train(cases):
         pickle.dump(result, fp)
             
 def evaluate(cases):
-    if cases % 2 == 0:
-        enable_conditional = False
-        n_classes = 0
-    else:
-        enable_conditional = True
-        n_classes = 10    
-
-    inceptions_score_all_weights("stl_resnet_postact_case" + str(cases), post_act_resnet.Generator,
-                                100, 100, n_classes=n_classes, latent_dims=3, n_classes_g=n_classes)
+    inceptions_score_all_weights("stl_resnet_postact2_case" + str(cases), post_act_resnet.Generator,
+                                100, 100, n_classes=10, latent_dims=3, n_classes_g=10)
     
 if __name__ == "__main__":
-    train(1)
+    for i in range(6):
+        evaluate(i)
