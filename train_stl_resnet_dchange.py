@@ -42,7 +42,8 @@ def load_stl(batch_size):
 
 def train(cases):
     ## ResNet version stl-10
-    # Gは論文流用して、Dは自作にLeakyReLUにする    
+    # Gは論文流用して、Dは自作にLeakyReLUにする(case 0,1)
+    # Dは論文流用するが初手にStrided Convを入れる(case 2,3)。計算量を削れる
 
     # case 0
     # beta2 = 0.9, D = post_act_resnet.Discriminator
@@ -151,4 +152,6 @@ def evaluate(cases):
                                 enable_conditional=True)
     
 if __name__ == "__main__":
-    train(3)
+    for i in range(4):
+        train(i)
+        evaluate(i)

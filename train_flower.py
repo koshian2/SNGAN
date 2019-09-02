@@ -11,30 +11,25 @@ import shutil
 
 import losses
 import models.resnet_size96 as resnet96
+import models.resnet_size96_light as resnet96_light
 from inception_score import inceptions_score_all_weights
 
 def load_animeface(batch_size):
-    # 前処理
-    for dir in sorted(glob.glob("thumb/*")):
-        imgs = glob.glob(dir + "/*.png")
-        if len(imgs) == 0:
-            shutil.rmtree(dir)
-
     trans = transforms.Compose([
         transforms.Resize(size=(96, 96)),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
-    dataset = torchvision.datasets.ImageFolder(root="./data/thumb", transform=trans)
+    dataset = torchvision.datasets.ImageFolder(root="./data/flower", transform=trans)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4)
     return dataloader
 
 def train(cases):
-    # Anime face (96x96)
-    # case 0: non-conditional
-    # case 1: conditional    
+    # Flower (96x96)
+    # case = 0 : unconditional
+    # case = 1 : conditional
 
-    output_dir = f"anime_case{cases}"
+    output_dir = f"flower_case{cases}"
 
     batch_size = 64
     device = "cuda"
@@ -43,8 +38,9 @@ def train(cases):
 
     dataloader = load_animeface(batch_size)
 
-    model_G = resnet96.Generator(n_classes_g=176 if enable_conditional else 0)
-    model_D = resnet96.Discriminator(n_classes_d=176 if enable_conditional else 0)
+    model_G = resnet96.Generator(n_classes_g=102 if enable_conditional else 0)
+    model_D = resnet96_light.DiscriminatorLight(n_classes_d=102 if enable_conditional else 0) # Dを軽くすると53s/ep -> 35s/ep
+    # model_D = resnet96.Discriminator(n_classes_d=102 if enable_conditional else 0)
     model_G, model_D = model_G.to(device), model_D.to(device)
 
     param_G = torch.optim.Adam(model_G.parameters(), lr=0.0002, betas=(0.5, 0.9))
@@ -53,11 +49,11 @@ def train(cases):
     gan_loss = losses.HingeLoss(batch_size, device)
 
     n_dis_update = 5
-    n_epoch = 1101
+    n_epoch = 1901
 
     result = {"d_loss": [], "g_loss": []}
     n = len(dataloader)
-    onehot_encoding = torch.eye(176).to(device)
+    onehot_encoding = torch.eye(102).to(device)
 
     for epoch in range(n_epoch):
         log_loss_D, log_loss_G = [], []
@@ -125,7 +121,18 @@ def train(cases):
     # ログ
     with open(output_dir + "/logs.pkl", "wb") as fp:
         pickle.dump(result, fp)
+            
+def evaluate(cases):
+    if cases in [0, 1]:
+        enable_conditional = False
+        n_classes = 0
+    elif cases in [2, 3]:
+        enable_conditional = True
+        n_classes = 10    
+
+    inceptions_score_all_weights("stl_case" + str(cases), standard_cnn.Generator,
+                                100, 100, dataset="stl", n_classes=n_classes,
+                                enable_conditional=enable_conditional)
     
 if __name__ == "__main__":
     train(0)
-    train(1)
