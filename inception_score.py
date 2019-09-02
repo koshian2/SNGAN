@@ -134,7 +134,7 @@ def inceptions_score_all_weights(base_dir, generator_class,
                 if n_classes == 0: # unconditional
                     x = model(torch.randn(batch_size, 128))
                 else:  # conditional
-                    label_onehot = torch.eye(10)[torch.randint(0, n_classes, (batch_size,))]
+                    label_onehot = torch.eye(n_classes)[torch.randint(0, n_classes, (batch_size,))]
                     x = model(torch.randn(batch_size, 128), label_onehot)
                 imgs.append(x)
             imgs = torch.cat(imgs, dim=0).cpu()

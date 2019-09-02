@@ -168,5 +168,6 @@ def evaluate(cases):
                                 100, 100, n_classes=n_classes, latent_dims=3, n_classes_g=n_classes)
     
 if __name__ == "__main__":
-    evaluate(8)
-    evaluate(9)
+    for i in range(10):
+        train(i)
+        evaluate(i)

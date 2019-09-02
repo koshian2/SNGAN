@@ -50,9 +50,9 @@ def train(cases):
     # case 1
     # beta2 = 0.999, D = post_act_resnet.Discriminator
     # case 2
-    # beta2 = 0.9, D = post_act_resnet.Discriminator
+    # beta2 = 0.9, D = stl_resnet_light.DiscriminatorStrided
     # case 3
-    # beta2 = 0.999, D = post_act_resnet.Discriminator
+    # beta2 = 0.999, D = stl_resnet_light.DiscriminatorStrided
 
 
     beta2 = 0.9 if cases % 2 == 0 else 0.999

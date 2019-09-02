@@ -123,16 +123,15 @@ def train(cases):
         pickle.dump(result, fp)
             
 def evaluate(cases):
-    if cases in [0, 1]:
-        enable_conditional = False
+    if cases == 0:
         n_classes = 0
-    elif cases in [2, 3]:
-        enable_conditional = True
-        n_classes = 10    
+    elif cases == 1:
+        n_classes = 102    
 
-    inceptions_score_all_weights("stl_case" + str(cases), standard_cnn.Generator,
-                                100, 100, dataset="stl", n_classes=n_classes,
-                                enable_conditional=enable_conditional)
+    inceptions_score_all_weights("flower_case" + str(cases), resnet96.Generator,
+                                100, 100, n_classes=n_classes, n_classes_g=n_classes)
     
 if __name__ == "__main__":
-    train(0)
+    for i in range(2):
+        train(i)
+        evaluate(i)
