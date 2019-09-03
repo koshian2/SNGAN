@@ -2,5 +2,6 @@
 */
 !models/
 !graph/
+!figure/
 !sampling_interpolation/
 sandbox.py

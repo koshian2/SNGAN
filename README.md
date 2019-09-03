@@ -1,4 +1,8 @@
 # SNGAN
+Unofficial implementation of SNGAN in PyTorch
+
+Spectral Normalization for Generative Adversarial Networks  
+https://arxiv.org/abs/1802.05957
 
 # Reimplementation
 Experiments mostly based on the paper.
@@ -334,4 +338,89 @@ IS = 2.722
 ![](https://raw.githubusercontent.com/koshian2/SNGAN/master/sampling_interpolation/stl_resnet_postact_case7.png)
 
 ### Why n_dis=1 don't work ?
+These are loss plot of case 0, 6 (both uncoditional). Case 0(n_dis=5) works well, but case 6(n_dis=1) does not.
 
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/graph/stl_resnet_postact_loss.png)
+
+As you can see, the loss of D in case 6 has hardly decreased.　If it doesn’t work, **G is too strong to learn nothing**. This is due to set Spectral Norm in D.
+
+Therefore, n_dis=5 which increases D update is easier to work.
+
+## STL-10 (Post-act Res Net / Post-act Res Net)
+### Fixed conditions
+* Generator: Post-act Res Net (48x48) 
+* Discriminator : Post-act Res Net (48x48, initial ch changeable)
+* Generator leraning rate : 0.0002
+* n_epochs : 1301 if n_dis=5, 261 if n_dis=1 (approx. 53k G updates)
+* Adam parameters : beta1=0.5, beta2 = 0.999
+
+### Changing conditions
+|       Case      |   0   |   1   |   2   |   3   |   4   |   5   |
+|:---------------:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+|   D initial ch  |   16  |   16  |   32  |   32  |   64  |   64  |
+|      N dis      |   5   |   1   |   5   |   1   |   5   |   1   |
+| Inception Score | 4.621 | 3.004 | 4.789 | 4.365 | 4.990 | 4.341 |
+
+### Incpetion score log
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/graph/stl_resnet_postact2.png)
+
+#### Case 0
+IS = 4.621
+
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/sampling_interpolation/stl_resnet_postact2_case0.png)
+
+#### Case 2
+IS = 4.789
+
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/sampling_interpolation/stl_resnet_postact2_case2.png)
+
+#### Case 4
+IS = 4.990
+
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/sampling_interpolation/stl_resnet_postact2_case4.png)
+
+## STL-10 (ResNet in the paper / some changed Res Net)
+### Fixed conditions
+* Generator: Res Net in the paper (48x48) 
+* Generator leraning rate : 0.0002
+* n_dis : 5
+* n_epochs : 1301
+* All conditional
+* Adam parameters : lr=0.0002, beta1=0.5
+
+### Changing conditions
+|       Case      |    0    |    1    |        2       |        3       |
+|:---------------:|:-------:|:-------:|:--------------:|:--------------:|
+|  Beta2 in Adam  |   0.9   |  0.999  |       0.9      |      0.999     |
+|  D architecture | postact | postact | strided resnet | strided resnet |
+| Inception Score |  5.955  |  5.708  |      6.906     |      7.222     |
+
+Strided ResNet is the original ResNet D with stride conv at the beginning. This reduces the amount of computation.
+
+### Incpetion score log
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/graph/stl_resnet_dchange.png)
+
+#### Case 0
+IS = 5.955
+
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/sampling_interpolation/stl_resnet_dchange_case0.png)
+
+#### Case 1
+IS = 5.708
+
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/sampling_interpolation/stl_resnet_dchange_case1.png)
+
+#### Case 2
+IS = 6.906
+
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/sampling_interpolation/stl_resnet_dchange_case2.png)
+
+#### Case 3
+IS = 7.222 (**Best**)
+
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/sampling_interpolation/stl_resnet_dchange_case3.png)
+
+## Discussion
+Larger D model will  improve IS slightly. But in any case, I could not find a way to generate clearly with n_dis = 1.
+
+In image classification, the diffrence between pre-act and post-act is slightly. But in gan, the difference seems to be quite large.
