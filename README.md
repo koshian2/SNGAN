@@ -16,7 +16,7 @@ Experiments mostly based on the paper.
 * Adam parameters : lr=0.0002, beta1=0.0, beta2 = 0.9
 * Using training data (10 classes, 50k images)
 
-[Insert figure here]
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/figure/network1.png)
 
 ### Changing conditions
 |       Case      |       0       |   1   |       2       |   3   |
@@ -62,7 +62,7 @@ IS = 5.821
 
 Note: beta1=0.0 failed to converge (seems to stuck into saddle points).
 
-[Insert figure here]
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/figure/network2.png)
 
 ### Changing conditions
 |       Case      |       0       |   1   |       2       |   3   |
@@ -108,7 +108,7 @@ IS = 5.900
 * Adam parameters : lr=0.0002, beta2 = 0.9
 * Using training + test data (10 classes, 13k (5k + 8k) images)
 
-[Insert figure here]
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/figure/network1.png)
 
 ### Changing conditions
 |     Case    |   0   |   1   |   2   |   3   |
@@ -152,7 +152,7 @@ IS = 5.813
 * Adam parameters : lr=0.0002, beta1=0.5, beta2 = 0.9
 * Using training + test data (10 classes, 13k (5k + 8k) images)
 
-[Insert figure here]
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/figure/network3.png)
 
 ### Changing conditions
 |     Case     |   0   |   1   |   2   |   3   |   4   |   5   |   6   |   7   |
@@ -226,7 +226,8 @@ Much less images per class than CIFAR-10 and STL-10.
 
 The network architecture is based on a 128x128 paper and the resolution is changed to 96x96 (dense : 4x4x1024 -> 3x3x1024).
 
-[Insert figure here]
+![](https://raw.githubusercontent.com/koshian2/SNGAN/master/figure/network4.png)
+
 
 ### Changing conditions
 * Case 0 = unconditional
@@ -278,8 +279,6 @@ The goal is to train with n_dis = 1, but there are many negative results
 For generator, ResNet implementation in the paper was pre-act ResNet (BN / SN-> ReLU-> Conv), but change this to post-act (Conv-> BN / SN-> ReLU). 
 
 For discriminator, simply used Standard CNN to reduce computation.
-
-【Insert code here】
 
 ### Changing conditions
 |          Case         |    0   |    1   |    2   |    3   |    4   |    5   |    6   |    7   |   8   |   9   |
